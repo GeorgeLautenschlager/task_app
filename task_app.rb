@@ -1,36 +1,8 @@
-# Github as a persistence layer
-# require 'octokit'
-# access_token = "5281d93e310249f448eb22c545d6e6f34ed336a1"
-
-# client = Octokit::Client.new(:access_token => access_token)
-# store = Store.new(client.gist('2d466d9cb698446034fcc40138981175').files.first[1].content)
-
 require 'pry'
+require 'octokit'
 
-class Task
-  attr_accessor :title, :description
-
-  def initialize(attrs)
-    @title = attrs["title"]
-    @description = attrs["description"]
-  end
-
-  def self.parse(string)
-    title, description = string.split ': '
-    self.new({ title: title, description: description })
-  end
-
-  def to_s
-    "#{@title}: #{@description}"
-  end
-
-  def to_h
-    {
-      title: @title,
-      description: @description
-    }
-  end
-end
+GITHUB_ACCESS_TOKEN = ENV["GITHUB_ACCESS_TOKEN"]
+GIST_ID = '2d466d9cb698446034fcc40138981175'
 
 class Store
   require 'json'
@@ -60,12 +32,39 @@ class Store
   end
 end
 
-running = true
-store = File.open("task_app.txt", 'r') do |persistence|
-  Store.new(persistence.read)
+class Task
+  attr_accessor :title, :description
+
+  def initialize(attrs)
+    @title = attrs["title"]
+    @description = attrs["description"]
+  end
+
+  def self.parse(string)
+    title, description = string.split ': '
+    self.new({ title: title, description: description })
+  end
+
+  def to_s
+    "#{@title}: #{@description}"
+  end
+
+  def to_h
+    {
+      title: @title,
+      description: @description
+    }
+  end
 end
 
-require 'pry'
+running = true
+
+# File persistence
+# store = File.open("task_app.txt", 'r') do |persistence|
+#   Store.new(persistence.read)
+# end
+client = Octokit::Client.new(access_token: GITHUB_ACCESS_TOKEN)
+store = Store.new(client.gist(GIST_ID).files.first[1].content)
 
 while running do
   system "clear"
