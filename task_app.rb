@@ -1,4 +1,5 @@
 require 'pry'
+require 'pry-nav'
 require 'octokit'
 
 GITHUB_ACCESS_TOKEN = ENV["GITHUB_ACCESS_TOKEN"]
@@ -7,18 +8,21 @@ GIST_ID = '2d466d9cb698446034fcc40138981175'
 class Store
   require 'json'
 
-  attr_accessor :tasks
+  attr_accessor :lists
 
   def initialize(json)
-    task_json = JSON.parse(json)["tasks"] || []
-
-    @tasks = task_json.map do |task_attrs|
-      Task.new(task_attrs)
+    list_json = JSON.parse(json)["lists"] || []
+    @lists = list_json.map do |list_attrs|
+      List.new(list_attrs)
     end
   end
 
   def add(task)
     tasks << task
+  end
+
+  def delete_index(index)
+    tasks.delete_at index
   end
 
   def serialize
@@ -27,8 +31,33 @@ class Store
 
   def to_h
     {
-      tasks: tasks.map(&:to_h)
+      lists: lists.map(&:to_h)
     }
+  end
+
+  def save!
+    gist_persistence = $octokit.gist(GIST_ID)
+
+    $octokit.edit_gist(GIST_ID,
+                          files: {
+                            "gistfile1.txt" => { "content" => serialize }
+                          }
+    )
+  end
+
+  def inbox
+    lists.find { |list| list.name == 'inbox' }
+  end
+end
+
+class List
+  attr_accessor :name, :tasks
+
+  def initialize(attrs)
+    @name = attrs["name"]
+    @tasks = attrs["tasks"].map do |task_attrs|
+      Task.new(task_attrs)
+    end
   end
 end
 
@@ -42,7 +71,7 @@ class Task
 
   def self.parse(string)
     title, description = string.split ': '
-    self.new({ title: title, description: description })
+    self.new({ "title" => title, "description" => description })
   end
 
   def to_s
@@ -63,40 +92,50 @@ running = true
 # store = File.open("task_app.txt", 'r') do |persistence|
 #   Store.new(persistence.read)
 # end
-client = Octokit::Client.new(access_token: GITHUB_ACCESS_TOKEN)
-store = Store.new(client.gist(GIST_ID).files.first[1].content)
+$octokit = Octokit::Client.new(access_token: GITHUB_ACCESS_TOKEN)
+store = Store.new($octokit.gist(GIST_ID).files.first[1].content)
 
 while running do
   system "clear"
 
   puts "1) Add Task"
-  puts "2) List Unprocessed Tasks"
-  puts "3) Get Next Task"
-  puts "4) Save and Exit"
+  puts "2) Delete Task"
+  puts "3) List Unprocessed Tasks"
+  puts "4) Get Next Task"
+  puts "5) Save and Exit"
+  puts "0) Debug"
 
   command = gets.strip
   case command
   when '1'
     puts "========= ADD TASK ========"
-    task = Task.parse(gets)
+    task = Task.parse(gets.strip)
     store.add task
   when '2'
-    puts "========== INBOX =========="
-    store.tasks.each do |task|
-      puts task.to_s
-    end
-
-    gets
+    puts "======= DELETE TASK ======="
+    index = gets.strip.to_i
+    store.delete_index(index)
   when '3'
+    puts "========== INBOX =========="
+    store.inbox.tasks.each_with_index do |task, index|
+      puts "#{index}) #{task.to_s}"
+    end
+    gets
+  when '4'
     puts "======= NEXT ACTION ======="
     puts store.tasks.first.to_s
     gets
-  when '4'
-    File.open("task_app.txt", 'w') do |persistence|
-      persistence << store.serialize
-    end
+  when '5'
+    # File Persistence
+    # File.open("task_app.txt", 'w') do |persistence|
+    #   persistence << store.serialize
+    # end
+
+    store.save!
 
     puts "Tasks Saved"
     running = false
+  when '0'
+    binding.pry
   end
 end
