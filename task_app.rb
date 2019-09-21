@@ -192,46 +192,4 @@ while running do
   when 'd'
     binding.pry
   end
-
-
-  # puts "1) Add Task"
-  # puts "2) Delete Task"
-  # puts "3) List Unprocessed Tasks"
-  # puts "4) Get Next Task"
-  # puts "5) Save and Exit"
-  # puts "0) Debug"
-
-  # command = gets.strip
-  # case command
-  # when '1'
-  #   puts "========= ADD TASK ========"
-  #   task = Task.parse(gets.strip)
-  #   store.add task
-  # when '2'
-  #   puts "======= DELETE TASK ======="
-  #   index = gets.strip.to_i
-  #   store.delete_index(index)
-  # when '3'
-  #   puts "========== INBOX =========="
-  #   store.inbox.tasks.each_with_index do |task, index|
-  #     puts "#{index}) #{task.to_s}"
-  #   end
-  #   gets
-  # when '4'
-  #   puts "======= NEXT ACTION ======="
-  #   puts store.tasks.first.to_s
-  #   gets
-  # when '5'
-  #   # File Persistence
-  #   # File.open("task_app.txt", 'w') do |persistence|
-  #   #   persistence << store.serialize
-  #   # end
-
-  #   store.save!
-
-  #   puts "Tasks Saved"
-  #   running = false
-  # when '0'
-  #   binding.pry
-  # end
 end
