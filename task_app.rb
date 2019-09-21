@@ -125,11 +125,37 @@ while running do
     puts 'Lists just require a name'
     store.lists << List.parse(gets.strip)
   when 'l'
-    store.lists.each do |list|
-      puts list.to_s
+    # TODO: this is duplicated, you should add a "list index view" where have I heard that before?
+    store.lists.each_with_index do |list, list_index|
+      puts "#{list_index}) #{list.name}"
     end
+    puts "\n\n\n\n#: manage a list\t b: back to menu"
+    list_selection = STDIN.getch
+    if list_selection =~ /[0-9]/
+      list = store.lists[list_selection.to_i]
+      puts list.to_s
+      list.tasks.each_with_index do |task, task_index|
+        puts "#{task_index}) #{task.to_s}"
+      end
 
-    STDIN.getch
+      puts "\n\n\n\n#: manage a task\t b: back to menu"
+      task_selection = STDIN.getch
+      if task_selection =~ /[0-9]/
+        puts list.tasks[task_selection.to_i].to_s
+        puts "\n\n\n\nd:done\t c: cancel"
+
+        task_commmand = STDIN.getch
+
+        case task_commmand
+        when 'd'
+          list.tasks.delete_at task_selection.to_i
+        end
+      else
+        # Return to menu
+      end
+    else
+      # Return to menu
+    end
   when 'p'
     store.inbox.tasks.each_with_index do |task, task_index|
       puts task.to_s
